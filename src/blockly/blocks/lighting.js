@@ -5,7 +5,7 @@ export const lightingBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("set LED color to")
-                    .appendField(new Blockly.FieldColour('#ff0000'), "COLOR");
+                    .appendField(new Blockly.field.Colour('#ff0000'), "COLOR");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
                 this.setColour('#9C27B0');
@@ -45,12 +45,12 @@ export const lightingBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("blink LED")
-                    .appendField(new Blockly.FieldColour('#ff0000'), "COLOR");
+                    .appendField(new Blockly.field.Colour('#ff0000'), "COLOR");
                 this.appendDummyInput()
                     .appendField("times")
-                    .appendField(new Blockly.FieldNumber(3, 1, 10, 1), "COUNT")
+                    .appendField(new Blockly.field.Number(3, 1, 10, 1), "COUNT")
                     .appendField("delay")
-                    .appendField(new Blockly.FieldNumber(500, 100, 2000, 100), "DELAY")
+                    .appendField(new Blockly.field.Number(500, 100, 2000, 100), "DELAY")
                     .appendField("ms");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);

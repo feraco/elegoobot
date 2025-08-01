@@ -17,8 +17,7 @@ export class RobotController {
         try {
             // Test connection by getting status
             const response = await fetch(`${this.baseUrl}/status`, {
-                method: 'GET',
-                timeout: 5000
+                method: 'GET'
             });
             
             if (response.ok) {
