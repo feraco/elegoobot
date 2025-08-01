@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Robot Car Controller</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="robot-icon">🤖</span>
+                    Smart Robot Car Controller
+                </h1>
+                <div class="connection-panel">
+                    <div class="connection-status" id="connectionStatus">
+                        <span class="status-indicator" id="statusIndicator"></span>
+                        <span id="statusText">Disconnected</span>
+                    </div>
+                    <div class="connection-controls">
+                        <input 
+                            type="text" 
+                            id="robotIP" 
+                            placeholder="192.168.4.1" 
+                            value="192.168.4.1"
+                            class="ip-input"
+                        >
+                        <button id="connectBtn" class="connect-btn">Connect</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="workspace-container">
+                <div class="toolbox-panel">
+                    <h3>Blocks</h3>
+                    <div id="blocklyDiv" class="blockly-workspace"></div>
+                </div>
+                
+                <div class="control-panel">
+                    <div class="panel-section">
+                        <h3>Camera Feed</h3>
+                        <div class="camera-container">
+                            <img id="cameraFeed" src="" alt="Camera feed will appear here" class="camera-feed">
+                            <div class="camera-controls">
+                                <button id="startCamera" class="camera-btn">Start Camera</button>
+                                <button id="stopCamera" class="camera-btn">Stop Camera</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3>Code Output</h3>
+                        <div class="code-container">
+                            <pre id="codeOutput" class="code-output"></pre>
+                            <div class="code-controls">
+                                <button id="runCode" class="run-btn">Run Code</button>
+                                <button id="stopCode" class="stop-btn">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3>Sensor Data</h3>
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <label>Ultrasonic (cm)</label>
+                                <span id="ultrasonicValue">--</span>
+                            </div>
+                            <div class="sensor-item">
+                                <label>Battery (V)</label>
+                                <span id="batteryValue">--</span>
+                            </div>
+                            <div class="sensor-item">
+                                <label>Line Tracking</label>
+                                <div class="tracking-sensors">
+                                    <span id="trackingL">--</span>
+                                    <span id="trackingM">--</span>
+                                    <span id="trackingR">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
