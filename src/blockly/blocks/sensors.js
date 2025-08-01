@@ -21,7 +21,7 @@ export const sensorBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("line tracking sensor")
-                    .appendField(new Blockly.FieldDropdown([
+                    .appendField(new Blockly.field.Dropdown([
                         ["left", "L"],
                         ["middle", "M"],
                         ["right", "R"]

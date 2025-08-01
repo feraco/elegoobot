@@ -11,7 +11,7 @@ export const movementBlocks = {
                 this.appendValueInput("TIME")
                     .setCheck("Number")
                     .appendField("for")
-                    .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                    .appendField(new Blockly.field.Number(1, 0.1, 10, 0.1), "TIME")
                     .appendField("seconds");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
@@ -38,7 +38,7 @@ export const movementBlocks = {
                 this.appendValueInput("TIME")
                     .setCheck("Number")
                     .appendField("for")
-                    .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                    .appendField(new Blockly.field.Number(1, 0.1, 10, 0.1), "TIME")
                     .appendField("seconds");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
@@ -59,7 +59,7 @@ export const movementBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("turn left for")
-                    .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                    .appendField(new Blockly.field.Number(1, 0.1, 10, 0.1), "TIME")
                     .appendField("seconds");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
@@ -79,7 +79,7 @@ export const movementBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("turn right for")
-                    .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                    .appendField(new Blockly.field.Number(1, 0.1, 10, 0.1), "TIME")
                     .appendField("seconds");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
@@ -116,7 +116,7 @@ export const movementBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("move")
-                    .appendField(new Blockly.FieldDropdown([
+                    .appendField(new Blockly.field.Dropdown([
                         ["forward", "1"],
                         ["backward", "2"],
                         ["left", "3"],
@@ -145,14 +145,14 @@ export const movementBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("control motor")
-                    .appendField(new Blockly.FieldDropdown([
+                    .appendField(new Blockly.field.Dropdown([
                         ["left", "1"],
                         ["right", "2"],
                         ["both", "3"]
                     ]), "MOTOR");
                 this.appendDummyInput()
                     .appendField("direction")
-                    .appendField(new Blockly.FieldDropdown([
+                    .appendField(new Blockly.field.Dropdown([
                         ["forward", "1"],
                         ["backward", "2"],
                         ["stop", "3"]
