@@ -5,14 +5,14 @@ export const servoBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("move servo")
-                    .appendField(new Blockly.field.Dropdown([
+                    .appendField(new Blockly.FieldDropdown([
                         ["horizontal", "1"],
                         ["vertical", "2"],
                         ["both", "3"]
                     ]), "SERVO");
                 this.appendDummyInput()
                     .appendField("to angle")
-                    .appendField(new Blockly.field.Number(90, 0, 180, 1), "ANGLE");
+                    .appendField(new Blockly.FieldNumber(90, 0, 180, 1), "ANGLE");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
                 this.setColour('#FF9800');
@@ -32,18 +32,18 @@ export const servoBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("sweep servo")
-                    .appendField(new Blockly.field.Dropdown([
+                    .appendField(new Blockly.FieldDropdown([
                         ["horizontal", "1"],
                         ["vertical", "2"]
                     ]), "SERVO");
                 this.appendDummyInput()
                     .appendField("from")
-                    .appendField(new Blockly.field.Number(0, 0, 180, 1), "START_ANGLE")
+                    .appendField(new Blockly.FieldNumber(0, 0, 180, 1), "START_ANGLE")
                     .appendField("to")
-                    .appendField(new Blockly.field.Number(180, 0, 180, 1), "END_ANGLE");
+                    .appendField(new Blockly.FieldNumber(180, 0, 180, 1), "END_ANGLE");
                 this.appendDummyInput()
                     .appendField("delay")
-                    .appendField(new Blockly.field.Number(500, 100, 2000, 100), "DELAY")
+                    .appendField(new Blockly.FieldNumber(500, 100, 2000, 100), "DELAY")
                     .appendField("ms");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);

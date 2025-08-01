@@ -5,7 +5,7 @@ export const controlBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("wait")
-                    .appendField(new Blockly.field.Number(1, 0.1, 10, 0.1), "TIME")
+                    .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
                     .appendField("seconds");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
@@ -25,7 +25,7 @@ export const controlBlocks = {
             init: function() {
                 this.appendDummyInput()
                     .appendField("repeat")
-                    .appendField(new Blockly.field.Number(3, 1, 100, 1), "TIMES")
+                    .appendField(new Blockly.FieldNumber(3, 1, 100, 1), "TIMES")
                     .appendField("times");
                 this.appendStatementInput("DO")
                     .setCheck(null)
