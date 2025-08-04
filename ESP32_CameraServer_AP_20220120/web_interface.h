@@ -21,7 +21,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         .main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
         .workspace { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; }
         .panel { background: #fff; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .blockly-area { height: 500px; }
+        .blockly-area { height: 500px; border: 1px solid #ddd; }
         .controls { display: flex; gap: 0.5rem; margin-top: 1rem; }
         .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
         .btn-primary { background: #007bff; color: white; }
@@ -30,6 +30,15 @@ const char index_html[] PROGMEM = R"rawliteral(
         .camera { width: 100%; max-width: 280px; height: 210px; border-radius: 4px; }
         .sensor-grid { display: grid; gap: 0.5rem; margin-top: 1rem; }
         .sensor-item { display: flex; justify-content: space-between; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem; }
+        .control-btn { padding: 1rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .move-forward { background: #28a745; color: white; }
+        .move-backward { background: #6c757d; color: white; }
+        .turn-left { background: #ffc107; color: black; }
+        .turn-right { background: #fd7e14; color: white; }
+        .stop-btn { background: #dc3545; color: white; grid-column: span 2; }
+        .led-controls { margin-top: 1rem; }
+        .color-btn { width: 40px; height: 40px; border: 2px solid #ddd; border-radius: 50%; margin: 0.25rem; cursor: pointer; }
         @media (max-width: 768px) { .workspace { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -40,191 +49,166 @@ const char index_html[] PROGMEM = R"rawliteral(
     <div class="main">
         <div class="workspace">
             <div class="panel">
-                <h3>Programming Blocks</h3>
-                <div id="blocklyDiv" class="blockly-area"></div>
-                <div class="controls">
-                    <button id="runCode" class="btn btn-primary">Run Code</button>
-                    <button id="stopCode" class="btn btn-danger">Stop</button>
+                <h3>Manual Controls</h3>
+                <div class="control-grid">
+                    <button class="control-btn move-forward" onclick="moveForward()">↑ Forward</button>
+                    <button class="control-btn move-backward" onclick="moveBackward()">↓ Backward</button>
+                    <button class="control-btn turn-left" onclick="turnLeft()">← Left</button>
+                    <button class="control-btn turn-right" onclick="turnRight()">→ Right</button>
+                    <button class="control-btn stop-btn" onclick="stopRobot()">⏹ STOP</button>
+                </div>
+                
+                <div class="led-controls">
+                    <h4>LED Colors</h4>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <div class="color-btn" style="background: red;" onclick="setLED(255,0,0)"></div>
+                        <div class="color-btn" style="background: green;" onclick="setLED(0,255,0)"></div>
+                        <div class="color-btn" style="background: blue;" onclick="setLED(0,0,255)"></div>
+                        <div class="color-btn" style="background: yellow;" onclick="setLED(255,255,0)"></div>
+                        <div class="color-btn" style="background: purple;" onclick="setLED(255,0,255)"></div>
+                        <div class="color-btn" style="background: cyan;" onclick="setLED(0,255,255)"></div>
+                        <div class="color-btn" style="background: white;" onclick="setLED(255,255,255)"></div>
+                        <div class="color-btn" style="background: black;" onclick="setLED(0,0,0)"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <h4>Servo Control</h4>
+                    <label>Horizontal: <input type="range" id="servoH" min="0" max="180" value="90" onchange="controlServo(1, this.value)"></label><br>
+                    <label>Vertical: <input type="range" id="servoV" min="30" max="110" value="70" onchange="controlServo(2, this.value)"></label>
                 </div>
             </div>
+            
             <div>
                 <div class="panel">
-                    <h3>Camera</h3>
-                    <img id="camera" src="/stream" class="camera" alt="Camera">
+                    <h3>Camera Feed</h3>
+                    <img id="camera" src="/stream" class="camera" alt="Camera" onerror="this.src='/capture'">
+                    <div style="margin-top: 0.5rem;">
+                        <button class="btn btn-primary" onclick="startCamera()">Start</button>
+                        <button class="btn btn-danger" onclick="stopCamera()">Stop</button>
+                    </div>
                 </div>
+                
                 <div class="panel" style="margin-top: 1rem;">
-                    <h3>Sensors</h3>
+                    <h3>Sensor Data</h3>
                     <div class="sensor-grid">
                         <div class="sensor-item">
                             <span>Distance:</span>
-                            <span id="distance">--</span>
+                            <span id="distance">-- cm</span>
                         </div>
                         <div class="sensor-item">
                             <span>Battery:</span>
-                            <span id="battery">--</span>
+                            <span id="battery">-- V</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span>Line L:</span>
+                            <span id="lineL">--</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span>Line M:</span>
+                            <span id="lineM">--</span>
+                        </div>
+                        <div class="sensor-item">
+                            <span>Line R:</span>
+                            <span id="lineR">--</span>
                         </div>
                     </div>
+                </div>
+
+                <div class="panel" style="margin-top: 1rem;">
+                    <h3>Status</h3>
+                    <div id="status">Ready</div>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://unpkg.com/blockly@10.4.3/blockly.min.js"></script>
+
     <script>
-        class RobotController {
-            constructor() { this.isExecuting = false; }
-            async sendCommand(cmd) {
-                const url = `/test1?var=${encodeURIComponent(JSON.stringify(cmd))}`;
-                const response = await fetch(url);
-                return response.text();
+        // Robot control functions
+        async function sendCommand(cmd) {
+            try {
+                const response = await fetch(`/test1?var=${encodeURIComponent(JSON.stringify(cmd))}`);
+                const result = await response.text();
+                document.getElementById('status').textContent = `Command sent: ${JSON.stringify(cmd)}`;
+                return result;
+            } catch (error) {
+                document.getElementById('status').textContent = `Error: ${error.message}`;
+                console.error('Command error:', error);
             }
-            async moveForward(speed, time) {
-                await this.sendCommand({N: 1, D1: speed, T1: time * 1000});
-                await this.delay(time * 1000);
-            }
-            async moveBackward(speed, time) {
-                await this.sendCommand({N: 2, D1: speed, T1: time * 1000});
-                await this.delay(time * 1000);
-            }
-            async turnLeft(time) {
-                await this.sendCommand({N: 3, D1: 200, T1: time * 1000});
-                await this.delay(time * 1000);
-            }
-            async turnRight(time) {
-                await this.sendCommand({N: 4, D1: 200, T1: time * 1000});
-                await this.delay(time * 1000);
-            }
-            async stop() { await this.sendCommand({N: 100}); }
-            async setLED(r, g, b) { await this.sendCommand({N: 5, D1: 1, D2: r, D3: g, D4: b}); }
-            async controlServo(servo, angle) { await this.sendCommand({N: 4, D1: servo, D2: angle}); }
-            delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-            stopAll() { this.isExecuting = false; this.stop(); }
         }
 
-        const robot = new RobotController();
+        async function moveForward() {
+            await sendCommand({N: 1, D1: 200, T1: 1000});
+        }
 
-        // Define blocks
-        Blockly.Blocks['move_forward'] = {
-            init: function() {
-                this.appendDummyInput().appendField("move forward speed").appendField(new Blockly.FieldNumber(200, 0, 255), "SPEED").appendField("for").appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME").appendField("sec");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(120);
-            }
-        };
-        Blockly.Blocks['move_backward'] = {
-            init: function() {
-                this.appendDummyInput().appendField("move backward speed").appendField(new Blockly.FieldNumber(200, 0, 255), "SPEED").appendField("for").appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME").appendField("sec");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(120);
-            }
-        };
-        Blockly.Blocks['turn_left'] = {
-            init: function() {
-                this.appendDummyInput().appendField("turn left for").appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME").appendField("sec");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(120);
-            }
-        };
-        Blockly.Blocks['turn_right'] = {
-            init: function() {
-                this.appendDummyInput().appendField("turn right for").appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME").appendField("sec");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(120);
-            }
-        };
-        Blockly.Blocks['stop_robot'] = {
-            init: function() {
-                this.appendDummyInput().appendField("stop robot");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(120);
-            }
-        };
-        Blockly.Blocks['set_led'] = {
-            init: function() {
-                this.appendDummyInput().appendField("set LED").appendField(new Blockly.FieldColour("#ff0000"), "COLOR");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(290);
-            }
-        };
-        Blockly.Blocks['wait_time'] = {
-            init: function() {
-                this.appendDummyInput().appendField("wait").appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME").appendField("sec");
-                this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(210);
-            }
-        };
+        async function moveBackward() {
+            await sendCommand({N: 2, D1: 200, T1: 1000});
+        }
 
-        // Generators
-        Blockly.JavaScript['move_forward'] = function(block) {
-            const speed = block.getFieldValue('SPEED');
-            const time = block.getFieldValue('TIME');
-            return `await robot.moveForward(${speed}, ${time});\n`;
-        };
-        Blockly.JavaScript['move_backward'] = function(block) {
-            const speed = block.getFieldValue('SPEED');
-            const time = block.getFieldValue('TIME');
-            return `await robot.moveBackward(${speed}, ${time});\n`;
-        };
-        Blockly.JavaScript['turn_left'] = function(block) {
-            const time = block.getFieldValue('TIME');
-            return `await robot.turnLeft(${time});\n`;
-        };
-        Blockly.JavaScript['turn_right'] = function(block) {
-            const time = block.getFieldValue('TIME');
-            return `await robot.turnRight(${time});\n`;
-        };
-        Blockly.JavaScript['stop_robot'] = function(block) {
-            return `await robot.stop();\n`;
-        };
-        Blockly.JavaScript['set_led'] = function(block) {
-            const color = block.getFieldValue('COLOR');
-            const r = parseInt(color.substr(1, 2), 16);
-            const g = parseInt(color.substr(3, 2), 16);
-            const b = parseInt(color.substr(5, 2), 16);
-            return `await robot.setLED(${r}, ${g}, ${b});\n`;
-        };
-        Blockly.JavaScript['wait_time'] = function(block) {
-            const time = block.getFieldValue('TIME');
-            return `await robot.delay(${time * 1000});\n`;
-        };
+        async function turnLeft() {
+            await sendCommand({N: 3, D1: 200, T1: 500});
+        }
 
-        // Initialize workspace
-        const workspace = Blockly.inject('blocklyDiv', {
-            toolbox: {
-                kind: 'categoryToolbox',
-                contents: [
-                    { kind: 'category', name: 'Movement', colour: 120, contents: [
-                        { kind: 'block', type: 'move_forward' },
-                        { kind: 'block', type: 'move_backward' },
-                        { kind: 'block', type: 'turn_left' },
-                        { kind: 'block', type: 'turn_right' },
-                        { kind: 'block', type: 'stop_robot' }
-                    ]},
-                    { kind: 'category', name: 'LED', colour: 290, contents: [
-                        { kind: 'block', type: 'set_led' }
-                    ]},
-                    { kind: 'category', name: 'Control', colour: 210, contents: [
-                        { kind: 'block', type: 'wait_time' }
-                    ]}
-                ]
-            },
-            grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
-            zoom: { controls: true, wheel: true, startScale: 1.0 },
-            trashcan: true
-        });
+        async function turnRight() {
+            await sendCommand({N: 4, D1: 200, T1: 500});
+        }
 
-        // Event handlers
-        document.getElementById('runCode').addEventListener('click', async () => {
-            if (robot.isExecuting) return;
-            robot.isExecuting = true;
-            document.getElementById('runCode').disabled = true;
+        async function stopRobot() {
+            await sendCommand({N: 100});
+        }
+
+        async function setLED(r, g, b) {
+            await sendCommand({N: 5, D1: 1, D2: r, D3: g, D4: b});
+        }
+
+        async function controlServo(servo, angle) {
+            await sendCommand({N: 4, D1: servo, D2: angle});
+        }
+
+        function startCamera() {
+            document.getElementById('camera').src = '/stream?' + new Date().getTime();
+        }
+
+        function stopCamera() {
+            document.getElementById('camera').src = '';
+        }
+
+        // Update sensor data periodically
+        async function updateSensors() {
             try {
-                const code = Blockly.JavaScript.workspaceToCode(workspace);
-                await eval(`(async () => { ${code} })()`);
+                const response = await fetch('/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('distance').textContent = (data.distance || '--') + ' cm';
+                    document.getElementById('battery').textContent = (data.battery || '--') + ' V';
+                    document.getElementById('lineL').textContent = data.lineL || '--';
+                    document.getElementById('lineM').textContent = data.lineM || '--';
+                    document.getElementById('lineR').textContent = data.lineR || '--';
+                }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Error: ' + error.message);
-            } finally {
-                robot.isExecuting = false;
-                document.getElementById('runCode').disabled = false;
+                console.log('Sensor update failed:', error);
             }
+        }
+
+        // Start sensor updates
+        setInterval(updateSensors, 2000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            startCamera();
+            updateSensors();
+            document.getElementById('status').textContent = 'Robot Controller Ready';
         });
 
-        document.getElementById('stopCode').addEventListener('click', () => {
-            robot.stopAll();
-            document.getElementById('runCode').disabled = false;
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case 'ArrowUp': case 'w': case 'W': moveForward(); break;
+                case 'ArrowDown': case 's': case 'S': moveBackward(); break;
+                case 'ArrowLeft': case 'a': case 'A': turnLeft(); break;
+                case 'ArrowRight': case 'd': case 'D': turnRight(); break;
+                case ' ': event.preventDefault(); stopRobot(); break;
+            }
         });
     </script>
 </body>
