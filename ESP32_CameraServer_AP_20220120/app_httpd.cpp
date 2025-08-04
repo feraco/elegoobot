@@ -692,13 +692,478 @@ static esp_err_t status_handler(httpd_req_t *req)
 static esp_err_t index_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-    sensor_t *s = esp_camera_sensor_get();
-    if (s->id.PID == OV3660_PID)
-    {
-        return httpd_resp_send(req, (const char *)index_ov3660_html_gz, index_ov3660_html_gz_len);
-    }
-    return httpd_resp_send(req, (const char *)index_ov2640_html_gz, index_ov2640_html_gz_len);
+    
+    // Serve the Blockly interface HTML
+    const char* blockly_html = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Robot Car Controller</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding: 1rem 0; position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .title { font-size: 1.5rem; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 0.5rem; }
+        .robot-icon { font-size: 1.8rem; }
+        .connection-panel { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+        .connection-status { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
+        .status-indicator { width: 12px; height: 12px; border-radius: 50%; background: #10b981; transition: background-color 0.3s ease; }
+        .main-content { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .workspace-container { display: grid; grid-template-columns: 1fr 400px; gap: 2rem; min-height: calc(100vh - 200px); }
+        .toolbox-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
+        .toolbox-panel h3 { margin-bottom: 1rem; color: #2d3748; font-weight: 600; }
+        .blockly-workspace { height: 600px; border-radius: 12px; overflow: hidden; border: 2px solid #e2e8f0; }
+        .control-panel { display: flex; flex-direction: column; gap: 1.5rem; }
+        .panel-section { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
+        .panel-section h3 { margin-bottom: 1rem; color: #2d3748; font-weight: 600; font-size: 1.1rem; }
+        .camera-container { text-align: center; }
+        .camera-feed { width: 100%; max-width: 320px; height: 240px; background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; object-fit: cover; margin-bottom: 1rem; }
+        .camera-controls { display: flex; gap: 0.5rem; justify-content: center; }
+        .camera-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: transparent; color: #667eea; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+        .camera-btn:hover { background: #667eea; color: white; transform: translateY(-1px); }
+        .code-container { display: flex; flex-direction: column; gap: 1rem; }
+        .code-output { background: #1a202c; color: #e2e8f0; padding: 1rem; border-radius: 8px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 0.875rem; line-height: 1.5; min-height: 120px; overflow-x: auto; border: 2px solid #2d3748; }
+        .code-controls { display: flex; gap: 0.5rem; }
+        .run-btn { padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; flex: 1; }
+        .run-btn:hover { background: #059669; transform: translateY(-1px); }
+        .stop-btn { padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; flex: 1; }
+        .stop-btn:hover { background: #dc2626; transform: translateY(-1px); }
+        .sensor-grid { display: flex; flex-direction: column; gap: 1rem; }
+        .sensor-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .sensor-item label { font-weight: 500; color: #4a5568; }
+        .sensor-item span { font-weight: 600; color: #2d3748; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; }
+        .tracking-sensors { display: flex; gap: 0.5rem; }
+        .tracking-sensors span { padding: 0.25rem 0.5rem; background: #e2e8f0; border-radius: 4px; font-size: 0.875rem; min-width: 40px; text-align: center; }
+        @media (max-width: 1024px) { .workspace-container { grid-template-columns: 1fr; gap: 1rem; } .header-content { flex-direction: column; text-align: center; } .connection-panel { justify-content: center; } }
+        @media (max-width: 640px) { .main-content { padding: 1rem; } }
+        .blocklyToolboxDiv { background: #f8fafc !important; border-right: 2px solid #e2e8f0 !important; }
+        .blocklyFlyout { background: #ffffff !important; }
+        .blocklyMainBackground { stroke: none !important; fill: #ffffff !important; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="robot-icon">🤖</span>
+                    Smart Robot Car Controller
+                </h1>
+                <div class="connection-panel">
+                    <div class="connection-status">
+                        <span class="status-indicator"></span>
+                        <span>Connected to Robot</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="main-content">
+            <div class="workspace-container">
+                <div class="toolbox-panel">
+                    <h3>Blocks</h3>
+                    <div id="blocklyDiv" class="blockly-workspace"></div>
+                </div>
+                <div class="control-panel">
+                    <div class="panel-section">
+                        <h3>Camera Feed</h3>
+                        <div class="camera-container">
+                            <img id="cameraFeed" src="/stream" alt="Camera feed" class="camera-feed">
+                            <div class="camera-controls">
+                                <button id="startCamera" class="camera-btn">Start Camera</button>
+                                <button id="stopCamera" class="camera-btn">Stop Camera</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-section">
+                        <h3>Code Output</h3>
+                        <div class="code-container">
+                            <pre id="codeOutput" class="code-output"></pre>
+                            <div class="code-controls">
+                                <button id="runCode" class="run-btn">Run Code</button>
+                                <button id="stopCode" class="stop-btn">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-section">
+                        <h3>Sensor Data</h3>
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <label>Ultrasonic (cm)</label>
+                                <span id="ultrasonicValue">--</span>
+                            </div>
+                            <div class="sensor-item">
+                                <label>Battery (V)</label>
+                                <span id="batteryValue">--</span>
+                            </div>
+                            <div class="sensor-item">
+                                <label>Line Tracking</label>
+                                <div class="tracking-sensors">
+                                    <span id="trackingL">--</span>
+                                    <span id="trackingM">--</span>
+                                    <span id="trackingR">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://unpkg.com/blockly@10.4.3/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.3/javascript.min.js"></script>
+    <script>
+        // Embedded JavaScript for robot control
+        class RobotController {
+            constructor() {
+                this.connected = true;
+                this.sensorData = { ultrasonic: 0, battery: 0, lineTracking: { L: 0, M: 0, R: 0 } };
+                this.isExecuting = false;
+            }
+            
+            async sendCommand(command) {
+                try {
+                    const url = `/test1?var=${encodeURIComponent(JSON.stringify(command))}`;
+                    const response = await fetch(url);
+                    return response.ok;
+                } catch (error) {
+                    console.error('Command error:', error);
+                    return false;
+                }
+            }
+            
+            async executeCommands(commands) {
+                if (this.isExecuting) return;
+                this.isExecuting = true;
+                
+                for (const command of commands) {
+                    if (!this.isExecuting) break;
+                    await this.executeCommand(command);
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                this.isExecuting = false;
+            }
+            
+            async executeCommand(command) {
+                if (!command || !command.method) return;
+                
+                switch (command.method) {
+                    case 'moveForward':
+                        await this.sendCommand({ N: 1, D1: command.params[0], T1: command.params[1] * 1000 });
+                        await new Promise(resolve => setTimeout(resolve, command.params[1] * 1000));
+                        break;
+                    case 'moveBackward':
+                        await this.sendCommand({ N: 2, D1: command.params[0], T1: command.params[1] * 1000 });
+                        await new Promise(resolve => setTimeout(resolve, command.params[1] * 1000));
+                        break;
+                    case 'turnLeft':
+                        await this.sendCommand({ N: 3, D1: 200, T1: command.params[0] * 1000 });
+                        await new Promise(resolve => setTimeout(resolve, command.params[0] * 1000));
+                        break;
+                    case 'turnRight':
+                        await this.sendCommand({ N: 4, D1: 200, T1: command.params[0] * 1000 });
+                        await new Promise(resolve => setTimeout(resolve, command.params[0] * 1000));
+                        break;
+                    case 'stop':
+                        await this.sendCommand({ N: 100 });
+                        break;
+                    case 'controlServo':
+                        await this.sendCommand({ N: 4, D1: command.params[0], D2: command.params[1] });
+                        break;
+                    case 'setLEDColor':
+                        await this.sendCommand({ N: 5, D1: 1, D2: command.params[0], D3: command.params[1], D4: command.params[2] });
+                        break;
+                    case 'wait':
+                        await new Promise(resolve => setTimeout(resolve, command.params[0] * 1000));
+                        break;
+                }
+            }
+            
+            stopAllCommands() {
+                this.isExecuting = false;
+                this.sendCommand({ N: 100 });
+            }
+        }
+        
+        // Initialize Blockly workspace
+        function initBlockly() {
+            // Define blocks
+            Blockly.Blocks['robot_move_forward'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("move forward speed")
+                        .appendField(new Blockly.FieldNumber(200, 0, 255), "SPEED")
+                        .appendField("for")
+                        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                        .appendField("seconds");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#4CAF50');
+                }
+            };
+            
+            Blockly.Blocks['robot_move_backward'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("move backward speed")
+                        .appendField(new Blockly.FieldNumber(200, 0, 255), "SPEED")
+                        .appendField("for")
+                        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                        .appendField("seconds");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#4CAF50');
+                }
+            };
+            
+            Blockly.Blocks['robot_turn_left'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("turn left for")
+                        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                        .appendField("seconds");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#4CAF50');
+                }
+            };
+            
+            Blockly.Blocks['robot_turn_right'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("turn right for")
+                        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                        .appendField("seconds");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#4CAF50');
+                }
+            };
+            
+            Blockly.Blocks['robot_stop'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("stop robot");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#4CAF50');
+                }
+            };
+            
+            Blockly.Blocks['robot_servo_control'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("move servo")
+                        .appendField(new Blockly.FieldDropdown([["horizontal", "1"], ["vertical", "2"]]), "SERVO")
+                        .appendField("to angle")
+                        .appendField(new Blockly.FieldNumber(90, 0, 180), "ANGLE");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#FF9800');
+                }
+            };
+            
+            Blockly.Blocks['robot_led_color'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("set LED color to")
+                        .appendField(new Blockly.FieldColour('#ff0000'), "COLOR");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#9C27B0');
+                }
+            };
+            
+            Blockly.Blocks['robot_wait'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("wait")
+                        .appendField(new Blockly.FieldNumber(1, 0.1, 10, 0.1), "TIME")
+                        .appendField("seconds");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour('#607D8B');
+                }
+            };
+            
+            // Define generators
+            Blockly.JavaScript['robot_move_forward'] = function(block) {
+                const speed = block.getFieldValue('SPEED');
+                const time = block.getFieldValue('TIME');
+                return `robot.moveForward(${speed}, ${time});\n`;
+            };
+            
+            Blockly.JavaScript['robot_move_backward'] = function(block) {
+                const speed = block.getFieldValue('SPEED');
+                const time = block.getFieldValue('TIME');
+                return `robot.moveBackward(${speed}, ${time});\n`;
+            };
+            
+            Blockly.JavaScript['robot_turn_left'] = function(block) {
+                const time = block.getFieldValue('TIME');
+                return `robot.turnLeft(${time});\n`;
+            };
+            
+            Blockly.JavaScript['robot_turn_right'] = function(block) {
+                const time = block.getFieldValue('TIME');
+                return `robot.turnRight(${time});\n`;
+            };
+            
+            Blockly.JavaScript['robot_stop'] = function(block) {
+                return `robot.stop();\n`;
+            };
+            
+            Blockly.JavaScript['robot_servo_control'] = function(block) {
+                const servo = block.getFieldValue('SERVO');
+                const angle = block.getFieldValue('ANGLE');
+                return `robot.controlServo(${servo}, ${angle});\n`;
+            };
+            
+            Blockly.JavaScript['robot_led_color'] = function(block) {
+                const color = block.getFieldValue('COLOR');
+                const r = parseInt(color.substr(1, 2), 16);
+                const g = parseInt(color.substr(3, 2), 16);
+                const b = parseInt(color.substr(5, 2), 16);
+                return `robot.setLEDColor(${r}, ${g}, ${b});\n`;
+            };
+            
+            Blockly.JavaScript['robot_wait'] = function(block) {
+                const time = block.getFieldValue('TIME');
+                return `robot.wait(${time});\n`;
+            };
+            
+            const toolbox = {
+                kind: 'categoryToolbox',
+                contents: [
+                    {
+                        kind: 'category',
+                        name: 'Movement',
+                        colour: '#4CAF50',
+                        contents: [
+                            { kind: 'block', type: 'robot_move_forward' },
+                            { kind: 'block', type: 'robot_move_backward' },
+                            { kind: 'block', type: 'robot_turn_left' },
+                            { kind: 'block', type: 'robot_turn_right' },
+                            { kind: 'block', type: 'robot_stop' }
+                        ]
+                    },
+                    {
+                        kind: 'category',
+                        name: 'Servo',
+                        colour: '#FF9800',
+                        contents: [
+                            { kind: 'block', type: 'robot_servo_control' }
+                        ]
+                    },
+                    {
+                        kind: 'category',
+                        name: 'Lighting',
+                        colour: '#9C27B0',
+                        contents: [
+                            { kind: 'block', type: 'robot_led_color' }
+                        ]
+                    },
+                    {
+                        kind: 'category',
+                        name: 'Control',
+                        colour: '#607D8B',
+                        contents: [
+                            { kind: 'block', type: 'robot_wait' }
+                        ]
+                    }
+                ]
+            };
+            
+            const workspace = Blockly.inject('blocklyDiv', {
+                toolbox: toolbox,
+                grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
+                zoom: { controls: true, wheel: true, startScale: 1.0, maxScale: 3, minScale: 0.3 },
+                trashcan: true,
+                sounds: false
+            });
+            
+            return workspace;
+        }
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            const robotController = new RobotController();
+            const workspace = initBlockly();
+            let isRunning = false;
+            
+            function updateCodeOutput() {
+                const code = Blockly.JavaScript.workspaceToCode(workspace);
+                document.getElementById('codeOutput').textContent = code;
+            }
+            
+            function parseCodeToCommands(code) {
+                const commands = [];
+                const lines = code.split('\n').filter(line => line.trim());
+                
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('robot.')) {
+                        const match = trimmed.match(/robot\.(\w+)\((.*)\)/);
+                        if (match) {
+                            const [, method, params] = match;
+                            const parsedParams = params ? params.split(',').map(p => {
+                                const trimmed = p.trim();
+                                const num = parseFloat(trimmed);
+                                return isNaN(num) ? trimmed : num;
+                            }) : [];
+                            commands.push({ method, params: parsedParams });
+                        }
+                    }
+                }
+                return commands;
+            }
+            
+            workspace.addChangeListener(updateCodeOutput);
+            
+            document.getElementById('startCamera').addEventListener('click', () => {
+                document.getElementById('cameraFeed').src = '/stream';
+            });
+            
+            document.getElementById('stopCamera').addEventListener('click', () => {
+                document.getElementById('cameraFeed').src = '';
+            });
+            
+            document.getElementById('runCode').addEventListener('click', async () => {
+                if (isRunning) return;
+                
+                isRunning = true;
+                document.getElementById('runCode').disabled = true;
+                document.getElementById('stopCode').disabled = false;
+                
+                try {
+                    const code = Blockly.JavaScript.workspaceToCode(workspace);
+                    const commands = parseCodeToCommands(code);
+                    await robotController.executeCommands(commands);
+                } catch (error) {
+                    console.error('Error running code:', error);
+                } finally {
+                    isRunning = false;
+                    document.getElementById('runCode').disabled = false;
+                    document.getElementById('stopCode').disabled = true;
+                }
+            });
+            
+            document.getElementById('stopCode').addEventListener('click', () => {
+                robotController.stopAllCommands();
+                isRunning = false;
+                document.getElementById('runCode').disabled = false;
+                document.getElementById('stopCode').disabled = true;
+            });
+        });
+    </script>
+</body>
+</html>
+)rawliteral";
+    
+    return httpd_resp_send(req, blockly_html, strlen(blockly_html));
 }
 // //图片帧流（实时视频）Test
 // static esp_err_t Test_handler(httpd_req_t *req)
