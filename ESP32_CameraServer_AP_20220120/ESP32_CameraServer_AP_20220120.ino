@@ -8,6 +8,7 @@
  */
 //#include <EEPROM.h>
 #include "CameraWebServer_AP.h"
+#include "web_interface.h"
 #include <WiFi.h>
 #include "esp_camera.h"
 WiFiServer server(100);
