@@ -17,6 +17,7 @@
 #include "img_converters.h"
 #include "camera_index.h"
 #include "Arduino.h"
+#include "web_interface.h"
 
 #include "fb_gfx.h"
 #include "fd_forward.h"
@@ -692,7 +693,8 @@ static esp_err_t status_handler(httpd_req_t *req)
 static esp_err_t index_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");
-    
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    return httpd_resp_send(req, index_html, strlen(index_html));
     // Serve the Blockly interface HTML
     const char* blockly_html = R"rawliteral(
 <!DOCTYPE html>
